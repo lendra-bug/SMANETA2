@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Offline-First</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Manifest untuk mendukung fitur PWA/Offline -->
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Aplikasi%20Offline%22,%22short_name%22:%22OfflineApp%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23ffffff%22,%22theme_color%22:%22%234CAF50%22}">
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>Catatan Offline</h1>
+            <div id="status-badge" class="badge online">Online</div>
+        </header>
+
+        <main>
+            <div class="input-section">
+                <input type="text" id="todo-input" placeholder="Tulis catatan atau tugas baru..." autocomplete="off">
+                <button id="add-btn">Tambah</button>
+            </div>
+
+            <ul id="todo-list">
+                <!-- Catatan akan muncul di sini via JavaScript -->
+            </ul>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Mendaftarkan Service Worker agar web bisa dibuka saat offline
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'offline-v1';
+                    const ASSETS = [
+                        './',
+                        './index.html',
+                        './style.css',
+                        './script.js'
+                    ];
+
+                    self.addEventListener('install', (e) => {
+                        e.waitUntil(
+                            caches.open(CACHE_NAME).then((cache) => {
+                                return cache.addAll(ASSETS);
+                            })
+                        );
+                    });
+
+                    self.addEventListener('fetch', (e) => {
+                        e.respondWith(
+                            caches.match(e.request).then((response) => {
+                                return response || fetch(e.request);
+                            })
+                        );
+                    });
+                `;
+                
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => console.log('Sistem Offline Siap!'))
+                    .catch(err => console.log('Gagal memuat sistem offline:', err));
+            });
+        }
+    </script>
+</body>
+</html>
